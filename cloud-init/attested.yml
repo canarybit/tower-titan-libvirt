@@ -1,0 +1,68 @@
+#cloud-config
+users:
+  - default
+  - name: ${USERNAME}
+    groups: [canarybit]
+    sudo: false
+    shell: /bin/bash
+    ssh_authorized_keys:
+      - ${SSH_PUBKEY}
+
+timezone: UTC
+locale: "en_US.UTF-8"
+
+package_update: true
+package_upgrade: true
+package_reboot_if_required: true
+packages:
+  - libtss2-dev
+  - jq
+
+write_files:
+  - path: /etc/environment
+    append: true
+    content: |
+      CB_TOKENS=${CB_TOKENS}
+      CBCLIENT_LOG_LEVEL=info
+      CBCLIENT_INSPECTOR_URL=${CBINSPECTOR_URL}
+      CBCLIENT_ENVIRONMENTS=${CC_ENVIRONMENTS}
+
+  - path: /etc/udev/rules.d/61-canarybit-udev.rules
+    owner: root:root
+    content: |
+      # Custom udev rules for CanaryBit attestation client
+      # SNP on non-Hyper-V guest
+      # Preserves OWNER="root", gives the group "canarybit" ownership and read access
+      KERNEL=="sev-guest",MODE="0640",GROUP="canarybit"
+      # SNP on Hyper-V guest
+      # Preserves OWNER="tss" and MODE="0660", gives the group "canarybit" ownership and read/write access
+      KERNEL=="tpmrm0",MODE="0660",GROUP="canarybit"
+
+  - path: /home/${USERNAME}/signing-key.pem
+    owner: ${USERNAME}:${USERNAME}
+    defer: true
+    permissions: '0600'
+    content: | 
+      ${SIGNING_KEY}
+
+  - path: /home/${USERNAME}/launch-cbclient.sh
+    owner: ${USERNAME}:${USERNAME}
+    defer: true
+    permissions: '0755'
+    content: |
+      #!/bin/bash
+      #############################
+      # FETCH & RUN THE CBCLIENT
+      #############################
+      curl -fsSL https://canarybit-public-binaries.s3.eu-west-1.amazonaws.com/cb-cli/${CBCLI_V}/cb-x86_64-unknown-linux-gnu -o cb; chmod +x cb
+      ./cb download cbclient ${CBCLIENT_V}/cbclient; chmod +x cbclient
+      ./cbclient attestation --token $(./cb login inspector) --key signing-key.pem 2> cbclient-logs.txt
+      
+runcmd:
+  - udevadm trigger
+  - su -c '/home/${USERNAME}/launch-cbclient.sh' - ${USERNAME}
+
+final_message: |
+  ==========   TOWER SETUP COMPLETED IN $UPTIME secs    ==========
+  The security of this environment has been verified by
+  CanaryBit Inspector Remote Attestation service.
