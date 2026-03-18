@@ -7,12 +7,20 @@ users:
     ssh_authorized_keys:
       - ${SSH_PUBKEY}
 
+hostname: ${HOSTNAME}
+
 timezone: UTC
 locale: "en_US.UTF-8"
 
 package_update: true
 package_upgrade: true
-package_reboot_if_required: true
+package_reboot_if_required: false # CVMs cannot be rebooted
+packages:
+  - qemu-guest-agent
+
+runcmd:
+  # qemu-agent
+  - systemctl enable --now qemu-guest-agent
 
 final_message: |
   ==========   TOWER SETUP COMPLETED IN $UPTIME secs    ==========

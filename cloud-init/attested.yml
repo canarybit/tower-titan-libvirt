@@ -8,15 +8,18 @@ users:
     ssh_authorized_keys:
       - ${SSH_PUBKEY}
 
+hostname: ${HOSTNAME}
+
 timezone: UTC
 locale: "en_US.UTF-8"
 
 package_update: true
 package_upgrade: true
-package_reboot_if_required: true
+package_reboot_if_required: false # CVMs cannot be rebooted
 packages:
   - libtss2-dev
   - jq
+  - qemu-guest-agent
 
 write_files:
   - path: /etc/environment
@@ -59,6 +62,10 @@ write_files:
       ./cbclient attestation --token $(./cb login inspector) --key signing-key.pem 2> cbclient-logs.txt
       
 runcmd:
+  # qemu-agent
+  - systemctl enable --now qemu-guest-agent
+
+  # launch cbclient
   - udevadm trigger
   - su -c '/home/${USERNAME}/launch-cbclient.sh' - ${USERNAME}
 
