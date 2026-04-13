@@ -1,22 +1,22 @@
 terraform {
   required_version = ">= 0.14.0"
   required_providers {
-    proxmox = {
-      source  = "bpg/proxmox"
-      version = ">= 0.85.0"
+    libvirt = {
+      source = "dmacvicar/libvirt"
+      version = "0.9.5"
     }
   }
 }
 
-// AMD SEV-SNP and Intel TDX requires root@pam authentication
-// See https://registry.terraform.io/providers/bpg/proxmox/latest/docs#example-usage
-// Using snippets (cloud-init) requires ssh.
-// See https://registry.terraform.io/providers/bpg/proxmox/latest/docs#when-is-ssh-required
-provider "proxmox" {
-  insecure = true
-  ssh {
-    agent = true
-  }
+provider "libvirt" {
+  # Connection URI - defaults to qemu:///system if not specified
+  # uri = "qemu:///system"
+
+  # For user session:
+  # uri = "qemu:///session"
+
+  # For remote connections (not yet implemented):
+  # uri = "qemu+ssh://user@remote-host/system"
 }
 
 // =====================
@@ -41,9 +41,7 @@ variable "cb_password" {
 // =====================
 
 module "confidential-vm" {
-  count = 2
-
-  source = "../modules/proxmox"
+  source = "../../modules/libvirt"
 
   cb_username = var.cb_username
   cb_password = var.cb_password
@@ -55,10 +53,10 @@ module "confidential-vm" {
   cvm_platform = "snp"
   remote_attestation = {}
 
-  // The image is assumed to be already uploaded to Proxmox
-  // See https://registry.terraform.io/providers/bpg/proxmox/latest/docs/resources/virtual_environment_file
+  // The image is assumed to be already uploaded to Libvirt
+  // https://registry.terraform.io/providers/dmacvicar/libvirt/latest/docs/resources/volume
   // for how to manage images with terraform.
-  cloud_image_id = "local:iso/ubuntu-25.10-server-cloudimg-amd64.img"
+  cloud_image_id = "/var/lib/libvirt/images/questing-server-cloudimg-amd64.img"
 }
 
 // ========================
@@ -66,4 +64,9 @@ module "confidential-vm" {
 // ========================
 output "cvm-info" {
   value = module.confidential-vm.*.cvm-info
+}
+
+output "vm_id" {
+  value       = module.confidential-vm.*.id
+  description = "Domain ID for VMs"
 }

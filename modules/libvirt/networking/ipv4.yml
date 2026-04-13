@@ -1,0 +1,10 @@
+version: 2
+  ethernets:
+    net0:
+      match:
+        name: e*
+      addresses:
+        - ${IPV4_ADDRESS}
+      routes:
+        - to: default
+          via: ${GATEWAY}

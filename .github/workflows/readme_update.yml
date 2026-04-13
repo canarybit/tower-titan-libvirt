@@ -21,3 +21,11 @@ jobs:
         output-file: README.md
         output-method: inject
         git-push: "true"
+
+    - name: Render Libvirt cVM Terraform docs and push changes back to PR
+      uses: terraform-docs/gh-actions@main
+      with:
+        working-dir: ./modules/libvirt
+        output-file: README.md
+        output-method: inject
+        git-push: "true"
