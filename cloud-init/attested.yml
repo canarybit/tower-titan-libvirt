@@ -1,17 +1,15 @@
 #cloud-config
+hostname: ${HOSTNAME}
 users:
   - default
   - name: ${USERNAME}
     groups: [canarybit]
-    sudo: false
+    sudo: ['ALL=(ALL) NOPASSWD:ALL']
     shell: /bin/bash
     ssh_authorized_keys:
       - ${SSH_PUBKEY}
 
-hostname: ${HOSTNAME}
-
 timezone: UTC
-locale: "en_US.UTF-8"
 
 package_update: true
 package_upgrade: true
@@ -22,54 +20,83 @@ packages:
   - qemu-guest-agent
 
 write_files:
-  - path: /etc/environment
-    append: true
+  # Set environment variables for cbclient systemd service
+  - path: /etc/canarybit/tokens
+    permissions: '0600'
+    defer: true
     content: |
-      CB_TOKENS=${CB_TOKENS}
-      CBCLIENT_LOG_LEVEL=info
-      CBCLIENT_INSPECTOR_URL=${CBINSPECTOR_URL}
-      CBCLIENT_ENVIRONMENTS=${CC_ENVIRONMENTS}
+      CB_TOKENS='${CB_TOKENS}'
 
-  - path: /etc/udev/rules.d/61-canarybit-udev.rules
-    owner: root:root
-    content: |
-      # Custom udev rules for CanaryBit attestation client
-      # SNP on non-Hyper-V guest
-      # Preserves OWNER="root", gives the group "canarybit" ownership and read access
-      KERNEL=="sev-guest",MODE="0640",GROUP="canarybit"
-      # SNP on Hyper-V guest
-      # Preserves OWNER="tss" and MODE="0660", gives the group "canarybit" ownership and read/write access
-      KERNEL=="tpmrm0",MODE="0660",GROUP="canarybit"
-
-  - path: /home/${USERNAME}/signing-key.pem
-    owner: ${USERNAME}:${USERNAME}
+  # A signing key to identify the current cVM instance
+  - path: /etc/canarybit/signing-key.pem
     defer: true
     permissions: '0600'
-    content: | 
+    content: |
       ${SIGNING_KEY}
 
-  - path: /home/${USERNAME}/launch-cbclient.sh
-    owner: ${USERNAME}:${USERNAME}
+  # Custom policy for the current cVM instance (optional)
+  - path: /etc/canarybit/custom-policy.rego
+    defer: true
+    permissions: '0600'
+    content: |
+      ${CUSTOM_POLICY}
+
+  # Configure cbclient as a System service
+  - path: /etc/systemd/system/cbclient.service
+    defer: true
+    permissions: '0600'
+    content: |
+      [Unit]
+      Description=CanaryBit Remote Attestation
+      
+      [Service]
+      EnvironmentFile=/etc/canarybit/tokens
+      Environment="CBCLIENT_LOG_LEVEL=info"
+      Environment="CBCLIENT_ENVIRONMENTS=${ENVIRONMENTS}"
+      Environment="CBCLIENT_INSPECTOR_URL=${CBINSPECTOR_URL}"
+      Environment="CBCLIENT_ANNOTATIONS=${CBCLIENT_ANNOTATIONS}"
+      Type=oneshot
+      ExecStart=/bin/bash -c '/usr/local/bin/cbclient attestation --token $$(cb login inspector) --key /etc/canarybit/signing-key.pem ${CUSTOM_POLICY_OPT}'
+
+  # Set a frequency for cbclient.service
+  - path: /etc/systemd/system/cbclient.timer
+    defer: true
+    permissions: '0600'
+    content: |
+      [Unit]
+      Description=CanaryBit Remote Attestation Timer
+      
+      [Timer]
+      OnCalendar=${FREQUENCY}
+      Persistent=true
+      
+      [Install]
+      WantedBy=timers.target
+
+  # Initialize the cbclient systemd service
+  - path: /etc/canarybit/launch-cbclient
     defer: true
     permissions: '0755'
     content: |
       #!/bin/bash
-      #############################
-      # FETCH & RUN THE CBCLIENT
-      #############################
-      curl -fsSL https://canarybit-public-binaries.s3.eu-west-1.amazonaws.com/cb-cli/${CBCLI_V}/cb-x86_64-unknown-linux-gnu -o cb; chmod +x cb
-      ./cb download cbclient ${CBCLIENT_V}/cbclient; chmod +x cbclient
-      ./cbclient attestation --token $(./cb login inspector) --key signing-key.pem 2> cbclient-logs.txt
-      
-runcmd:
-  # qemu-agent
-  - systemctl enable --now qemu-guest-agent
 
-  # launch cbclient
-  - udevadm trigger
-  - su -c '/home/${USERNAME}/launch-cbclient.sh' - ${USERNAME}
+      # Download the CanaryBit CLI (cb) into /usr/local/bin
+      curl -fsSL https://canarybit-public-binaries.s3.eu-west-1.amazonaws.com/cb-cli/${CBCLI_V}/cb-x86_64-unknown-linux-gnu -o cb; chmod +x cb; mv cb /usr/local/bin/cb
+
+      # Download the CanaryBit Inspector agent (cbclient) into /usr/local/bin
+      CB_TOKENS='${CB_TOKENS}' cb download cbclient ${CBCLIENT_V}/cbclient; chmod +x cbclient; mv cbclient /usr/local/bin/cbclient
+
+      # Start cbclient as System service once and then a defined frequency
+      systemctl start cbclient.service
+      systemctl enable --now cbclient.timer
+
+runcmd:
+  # Enable qemu-agent for IP retrieval
+  - systemctl enable --now qemu-guest-agent
+  # Launch cbclient as systemd service
+  - /etc/canarybit/launch-cbclient
 
 final_message: |
-  ==========   TOWER SETUP COMPLETED IN $UPTIME secs    ==========
-  The security of this environment has been verified by
-  CanaryBit Inspector Remote Attestation service.
+  ==========   CANARYBIT TOWER SETUP COMPLETED IN $UPTIME secs    ==========
+  The security and privacy of this environment is verified by CanaryBit Remote Attestation service:
+  ${CBINSPECTOR_URL}
