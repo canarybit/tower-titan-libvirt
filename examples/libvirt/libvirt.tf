@@ -8,16 +8,7 @@ terraform {
   }
 }
 
-provider "libvirt" {
-  # Connection URI - defaults to qemu:///system if not specified
-  # uri = "qemu:///system"
-
-  # For user session:
-  # uri = "qemu:///session"
-
-  # For remote connections (not yet implemented):
-  # uri = "qemu+ssh://user@remote-host/system"
-}
+provider "libvirt" {}
 
 // =====================
 //  Tower Arguments
@@ -41,6 +32,7 @@ variable "cb_password" {
 // =====================
 
 module "confidential-vm" {
+  count = 1
   source = "../../modules/libvirt"
 
   cb_username = var.cb_username
@@ -48,15 +40,21 @@ module "confidential-vm" {
 
   // Confidential VM
   cvm_name = "demo-cvm-${count.index}"
+  // The image is assumed to be already uploaded to Libvirt.
+  // Refer to the provider libvirt_volume resource (https://registry.terraform.io/providers/dmacvicar/libvirt/latest/docs/resources/volume)
+  // for how to manage images with Terraform.
+  cvm_cloud_image = "/var/lib/libvirt/images/questing-server-cloudimg-amd64.img"
+  cvm_cpu_platform = {
+    type = "snp"
+    firmware = "/usr/share/edk2/ovmf/OVMF.amdsev.fd"
+  }
 
   // Remote Attestation
-  cvm_platform = "snp"
-  remote_attestation = {}
+  remote_attestation = {
+    // custom_policy_file = "./my-policy.rego"
+    // frequency = "daily"
+  }
 
-  // The image is assumed to be already uploaded to Libvirt
-  // https://registry.terraform.io/providers/dmacvicar/libvirt/latest/docs/resources/volume
-  // for how to manage images with terraform.
-  cloud_image_id = "/var/lib/libvirt/images/questing-server-cloudimg-amd64.img"
 }
 
 // ========================
@@ -64,9 +62,4 @@ module "confidential-vm" {
 // ========================
 output "cvm-info" {
   value = module.confidential-vm.*.cvm-info
-}
-
-output "vm_id" {
-  value       = module.confidential-vm.*.id
-  description = "Domain ID for VMs"
 }

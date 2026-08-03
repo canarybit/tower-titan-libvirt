@@ -14,13 +14,26 @@ variable "cb_password" {
   sensitive   = true
 }
 
-variable "cvm_platform" {
-  description = "Type of confidential machine snp/tdx"
-  type        = string
+variable "cvm_cpu_platform" {
+  description = <<-EOT
+    Type of Confidential CPU hardware platform
+    cvm_cpu_platform = {
+      type     - CPU hardware type: ['snp', 'tdx']
+      firmware - (Optional) Path to custom firmware OVMF file.
+                 Defaults:
+                    snp = "/usr/share/ovmf/OVMF.amdsev.fd"
+                    tdx = "/usr/share/edk2/ovmf/OVMF.inteltdx.fd"
+    }
+  EOT
+
+  type = object({
+    type = string
+    firmware = optional(string)
+  })
 
   validation {
-    condition     = contains(["snp", "tdx"], var.cvm_platform)
-    error_message = "cvm_platform has to be either snp or tdx"
+    condition = contains(["snp", "tdx"], var.cvm_cpu_platform.type)
+    error_message = "The value has to be one of the following: ['snp', 'tdx']"
   }
 }
 
@@ -29,16 +42,33 @@ variable "cvm_name" {
   type        = string
 }
 
-variable "cloud_image_id" {
-  description = "Image id used for cloud image"
+variable "cvm_cloud_image" {
+  description = "Path to the CVM cloud image. The image is assumed to be already uploaded to Libvirt."
   type        = string
+}
+
+variable "remote_attestation" {
+  description = "Enable CanaryBit Remote Attestation"
+  type = object({
+    cbinspector_url     = optional(string, "https://api.inspector.confidentialcloud.io")
+    cbclient_version    = optional(string, "0.3.2")
+    cbcli_version       = optional(string, "0.2.5")
+    signing_key         = optional(string)
+    custom_policy_file  = optional(string)
+    frequency           = optional(string, "daily")
+  })
+
+  validation {
+    condition = contains(["minutely", "hourly", "daily", "weekly", "monthly"], var.remote_attestation.frequency)
+    error_message = "The frequency has to be one of the following: minutely, hourly, daily, weekly, monthly"
+  }
 }
 
 ///////////////////////
 // DEFAULT
 ///////////////////////
 variable "cloud_init" {
-  description = "Custom cloud init configuration"
+  description = "Custom cloud-init configuration"
   type = object({
     custom_path = optional(string)
     extra_args  = optional(map(any), {})
@@ -47,19 +77,8 @@ variable "cloud_init" {
 
   validation {
     condition     = !(var.cloud_init.custom_path == null && length(var.cloud_init.extra_args) > 0)
-    error_message = "a custom_path is required when using extra_args in cloud_init"
+    error_message = "A custom_path is required when using extra_args in cloud_init"
   }
-}
-
-variable "remote_attestation" {
-  description = "Enable CanaryBit Remote Attestation"
-  type = object({
-    cbinspector_url  = optional(string, "https://api.inspector.confidentialcloud.io")
-    cbclient_version = optional(string, "0.3.0")
-    cbcli_version    = optional(string, "0.2.5")
-    signing_key      = optional(string)
-  })
-  default = {}
 }
 
 variable "cvm_ip4" {
@@ -85,7 +104,7 @@ variable "cvm_gateway" {
   default     = null
 }
 
-variable "pool" {
+variable "libvirt_pool" {
   description = "Libvirt pool"
   type        = string
   default     = "default"
@@ -107,12 +126,6 @@ variable "cvm_cpu" {
   description = "CPU type"
   type        = string
   default     = "host-passthrough"
-}
-
-variable "cvm_firmware" {
-  description = "Path to firmware (OVMF.fd)"
-  type = string
-  default = null # Default depends on cvm_platform, see locals
 }
 
 variable "cvm_vcpus" {
@@ -137,4 +150,10 @@ variable "cvm_network" {
   description = "Libvirt network"
   type        = string
   default     = "default"
+}
+
+variable "cvm_annotations" {
+  description = "Custom annotations in \"<Key>\" = \"<Value>\" format"
+  type        = map
+  default     = {}
 }

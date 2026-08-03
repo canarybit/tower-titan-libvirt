@@ -1,6 +1,6 @@
 resource "libvirt_volume" "overlay" {
   name     = "${var.cvm_name}-disk.qcow2"
-  pool     = var.pool
+  pool     = var.libvirt_pool
   capacity = var.cvm_disk_size_gb * local.gigabyte
 
   target = {
@@ -10,7 +10,7 @@ resource "libvirt_volume" "overlay" {
   }
 
   backing_store = {
-    path = var.cloud_image_id
+    path = var.cvm_cloud_image
     format = {
       type = "qcow2"
     }

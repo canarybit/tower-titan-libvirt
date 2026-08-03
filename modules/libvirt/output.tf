@@ -6,6 +6,7 @@ output "cvm-info" {
   description = "Details of the running CVM instance(s)"
   value       = <<-EOF
 
+  Domain ID:      ${libvirt_domain.cvm.id}
   Name:           ${libvirt_domain.cvm.name}
   Size/Family:    vCPUs: ${libvirt_domain.cvm.vcpu}, Memory: ${libvirt_domain.cvm.memory} (Confidential)
   OS:             ${libvirt_volume.overlay.backing_store.path}
@@ -18,8 +19,4 @@ output "cvm-info" {
     ${data.local_file.signing-key-fingerprint.content}
 
   EOF
-}
-
-output "id" {
-  value = libvirt_domain.cvm.id
 }

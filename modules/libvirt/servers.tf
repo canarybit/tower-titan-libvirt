@@ -1,19 +1,3 @@
-locals {
-  // TODO: TDX is untested
-  cvm_firmware = var.cvm_firmware != null ? var.cvm_firmware : var.cvm_platform == "snp" ? "/usr/share/ovmf/OVMF.amdsev.fd" : "/usr/share/edk2/ovmf/OVMF.inteltdx.fd"
-  launch_security = var.cvm_platform == null ? null : {
-    sevsnp = var.cvm_platform == "snp" ? {
-      cbit_pos = 51
-      policy   = 196608 // 0x00030000
-    } : null
-    tdx = var.cvm_platform == "tdx" ? {
-      quote_generation_service = {
-        path = "/var/run/tdx-qgs/qgs.socket"
-      }
-    } : null
-  }
-}
-
 resource "libvirt_domain" "cvm" {
   name        = var.cvm_name
   memory      = var.cvm_ram
@@ -22,13 +6,24 @@ resource "libvirt_domain" "cvm" {
   type        = "kvm"
   running     = true
 
+  // Annotations
+  metadata = {
+    xml = <<EOFXML
+      <canarybit:annotations xmlns:canarybit="https://canarybit.eu/libvirt/metadata/1.0">
+        %{ for k, v in local.annotations ~}
+        <annotation>${k}-${v}</annotation>
+        %{ endfor ~}
+      </canarybit:annotations>
+    EOFXML
+  }
+
   os = {
     type             = "hvm"
     type_arch        = "x86_64"
     type_machine     = "q35"
     loader_stateless = "yes"
     loader_readonly  = "yes"
-    loader           = local.cvm_firmware
+    loader           = local.cpu_firmware
     // TODO: this should be the default when using newer versions, untested for now
     # firmware = "efi" # Needed for firmware-autoselection (libvirt >= 11.8.0)
   }
