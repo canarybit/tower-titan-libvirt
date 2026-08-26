@@ -88,6 +88,17 @@ virsh domcapabilities --machine q35 --xpath /domainCapabilities/os/loader
 ```
 In general any firmware with "amdsev" in the name is meant for SEV-SNP and any with "intel-tdx" is meant for TDX, but the names can vary.
 
+### Secure Boot
+If the confidential firmware also includes secure boot support, then secure boot will be enabled. Auto-selection can be influenced to select the firmware with (or without) secure boot, by setting `var.cvm_secure_boot` variable. Secure boot isn't always available and it depends on the firmware available, which is managed by the OVMF package from the distribution.
+
+For Example:
+```
+/usr/share/ovmf/OVMF.amdsev.fd (no secure boot and AMD SEV-SNP)
+/usr/share/ovmf/OVMF.inteltdx.ms.fd (secure boot and Intel TDX)
+```
+
+If `var.cvm_secure_boot` is set to `true` and there is no firmware with secure boot support, then the selection will fail. The same can happen in reverse if secure boot is disabled, but only secure boot firmware is available. By default the variable is set to `null`, which will then let libvirt pick the firmware with highest priority.
+
 ## sev-guest in Ubuntu cloud images
 `sev-guest` is not available in Ubuntu cloud images (before 25.10) without extra packages. Add the following to the cloud-init to enable it:
 
@@ -178,13 +189,14 @@ No modules.
 | <a name="input_cvm_annotations"></a> [cvm\_annotations](#input\_cvm\_annotations) | Custom annotations in "<Key>" = "<Value>" format | `map` | `{}` | no |
 | <a name="input_cvm_cloud_image"></a> [cvm\_cloud\_image](#input\_cvm\_cloud\_image) | Path to the CVM cloud image. The image is assumed to be already uploaded to Libvirt. | `string` | n/a | yes |
 | <a name="input_cvm_cpu"></a> [cvm\_cpu](#input\_cvm\_cpu) | CPU type | `string` | `"host-passthrough"` | no |
-| <a name="input_cvm_cpu_platform"></a> [cvm\_cpu\_platform](#input\_cvm\_cpu\_platform) | Type of Confidential CPU hardware platform<br/>cvm\_cpu\_platform = {<br/>  type     - CPU hardware type: ['snp', 'tdx']<br/>  firmware - (Optional) Path to custom firmware OVMF file.<br/>             Defaults:<br/>                snp = "/usr/share/ovmf/OVMF.amdsev.fd"<br/>                tdx = "/usr/share/edk2/ovmf/OVMF.inteltdx.fd"<br/>} | <pre>object({<br/>    type = string<br/>    firmware = optional(string)<br/>  })</pre> | n/a | yes |
+| <a name="input_cvm_cpu_platform"></a> [cvm\_cpu\_platform](#input\_cvm\_cpu\_platform) | Type of Confidential CPU hardware platform<br/>cvm\_cpu\_platform = {<br/>  type     - CPU hardware type: ['snp', 'tdx']<br/>  firmware - (Optional) Path to custom firmware OVMF file.<br/>} | <pre>object({<br/>    type = string<br/>    firmware = optional(string)<br/>  })</pre> | n/a | yes |
 | <a name="input_cvm_disk_size_gb"></a> [cvm\_disk\_size\_gb](#input\_cvm\_disk\_size\_gb) | CVM Disk size | `number` | `30` | no |
 | <a name="input_cvm_gateway"></a> [cvm\_gateway](#input\_cvm\_gateway) | Default gateway for machine. Ignored if cvm\_ip4 is set to dhcp | `string` | `null` | no |
 | <a name="input_cvm_ip4"></a> [cvm\_ip4](#input\_cvm\_ip4) | IP address of machine or dhcp for dynamic assignment | `string` | `"dhcp"` | no |
 | <a name="input_cvm_name"></a> [cvm\_name](#input\_cvm\_name) | Confidential VM name | `string` | n/a | yes |
 | <a name="input_cvm_network"></a> [cvm\_network](#input\_cvm\_network) | Libvirt network | `string` | `"default"` | no |
 | <a name="input_cvm_ram"></a> [cvm\_ram](#input\_cvm\_ram) | RAM size of the machine in MB | `number` | `4096` | no |
+| <a name="input_cvm_secure_boot"></a> [cvm\_secure\_boot](#input\_cvm\_secure\_boot) | Whether Secure Boot should be enabled in the firmware (yes, no). Default (not set): let libvirt decide based on the available firmware. | `optional(bool)` | n/a | yes |
 | <a name="input_cvm_ssh_pubkey"></a> [cvm\_ssh\_pubkey](#input\_cvm\_ssh\_pubkey) | Path to the public key used for SSH connection | `string` | `"~/.ssh/id_rsa.pub"` | no |
 | <a name="input_cvm_username"></a> [cvm\_username](#input\_cvm\_username) | CVM Username for SSH login | `string` | `"tower"` | no |
 | <a name="input_cvm_vcpus"></a> [cvm\_vcpus](#input\_cvm\_vcpus) | Number of vcpus (cores) | `number` | `1` | no |

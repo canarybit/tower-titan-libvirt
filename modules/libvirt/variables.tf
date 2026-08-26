@@ -20,9 +20,6 @@ variable "cvm_cpu_platform" {
     cvm_cpu_platform = {
       type     - CPU hardware type: ['snp', 'tdx']
       firmware - (Optional) Path to custom firmware OVMF file.
-                 Defaults:
-                    snp = "/usr/share/ovmf/OVMF.amdsev.fd"
-                    tdx = "/usr/share/edk2/ovmf/OVMF.inteltdx.fd"
     }
   EOT
 
@@ -62,6 +59,12 @@ variable "remote_attestation" {
     condition = contains(["minutely", "hourly", "daily", "weekly", "monthly"], var.remote_attestation.frequency)
     error_message = "The frequency has to be one of the following: minutely, hourly, daily, weekly, monthly"
   }
+}
+
+variable "cvm_secure_boot" {
+  description = "Whether Secure Boot should be enabled in the firmware (yes, no). Default (not set): let libvirt decide based on the available firmware."
+  type = bool
+  default = null
 }
 
 ///////////////////////

@@ -26,6 +26,14 @@ resource "libvirt_domain" "cvm" {
     // Prioritize explicit firmware when set
     loader   = var.cvm_cpu_platform.firmware != null ? var.cvm_cpu_platform.firmware : ""
     firmware = var.cvm_cpu_platform.firmware == null ? "efi" : null
+    firmware_info = var.cvm_secure_boot == null ? null : {
+      features = [
+        {
+          name = "secure-boot",
+          enabled = var.cvm_secure_boot ? "yes" : "no"
+        }
+      ]
+    }
   }
 
   features = {
