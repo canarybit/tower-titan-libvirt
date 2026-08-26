@@ -46,7 +46,6 @@ module "confidential-vm" {
   cvm_cloud_image = "/var/lib/libvirt/images/questing-server-cloudimg-amd64.img"
   cvm_cpu_platform = {
     type = "snp"
-    firmware = "/usr/share/edk2/ovmf/OVMF.amdsev.fd"
   }
 
   // Remote Attestation

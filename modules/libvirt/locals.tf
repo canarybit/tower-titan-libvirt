@@ -22,14 +22,6 @@ locals {
       CBCLIENT_ANNOTATIONS    = join(",", formatlist("%s=%s", keys(local.annotations), values(local.annotations)))
   }, var.cloud_init.extra_args)
 
-  // Firmware path depending on hardware type
-  cpu_firmware = (
-    var.cvm_cpu_platform.firmware != "" ? var.cvm_cpu_platform.firmware :
-    var.cvm_cpu_platform.type == "snp" ? "/usr/share/ovmf/OVMF.amdsev.fd" :
-    var.cvm_cpu_platform.type == "tdx" ? "/usr/share/edk2/ovmf/OVMF.inteltdx.fd" :
-    try(var.cvm_cpu_platform.firmware, "Error - Firmware value malformed or not supported!")
-  )
-
   // Libvirt launch_security config depending on hardware type
   launch_security = ({
     sevsnp = var.cvm_cpu_platform.type == "snp" ? {

@@ -21,11 +21,11 @@ resource "libvirt_domain" "cvm" {
     type             = "hvm"
     type_arch        = "x86_64"
     type_machine     = "q35"
+    loader_readonly  = var.cvm_cpu_platform.type == "tdx" ? "yes" : null
     loader_stateless = "yes"
-    loader_readonly  = "yes"
-    loader           = local.cpu_firmware
-    // TODO: this should be the default when using newer versions, untested for now
-    # firmware = "efi" # Needed for firmware-autoselection (libvirt >= 11.8.0)
+    // Prioritize explicit firmware when set
+    loader   = var.cvm_cpu_platform.firmware != null ? var.cvm_cpu_platform.firmware : ""
+    firmware = var.cvm_cpu_platform.firmware == null ? "efi" : null
   }
 
   features = {

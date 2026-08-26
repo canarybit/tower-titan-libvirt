@@ -19,7 +19,7 @@ To simplify the ssh access use ssh-agent, like this for example:
 eval (ssh-agent -s)
 ssh-add
 ```
-This will start a ssh-agent and add the default ssh key to it. 
+This will start a ssh-agent and add the default ssh key to it.
 Specify the key used on the libvirt host if needed.
 
 ## Configuring Libvirt
@@ -74,18 +74,19 @@ Some resources to why these assumptions are needed:
 qemu-agent (or qemu-guest-agent), is used to report information about the vm, such as the assigned IP. The cloud-init templates in this module installs, enables and starts qemu-guest-agent.
 
 ## Confidential Firmware
-Libvirt has a feature called firmware-auto-selection which is able to select the correct firmware based on the type of instance. Before version `11.8.0` there was a bug which caused libvirt to be unable to select the correct firmware for both SEV-SNP and TDX.
+Libvirt has a feature called firmware auto-selection which is able to select the correct firmware based on the type of instance. Tower integrates with this and is thus capable of finding the correct firmware automatically. Note that the firmware has to be correctly installed, which should be managed by the OVMF package from the distribution.
 
-See `11.8.0` changelog for details:
-https://lists.libvirt.org/archives/list/announce@lists.libvirt.org/thread/R536RN67DBAGGLPV2GFV4HRZJLYJMND5/
+More information on how this works:
+- https://github.com/qemu/qemu/blob/master/docs/interop/firmware.json#L469-L552
+- https://libvirt.org/formatdomaincaps.html#guest-firmware
 
-The workaround when using Libvirt < `11.8.0` is to manually supply the correct firmware. `var.cvm_firmware` can be used to achieve this. This module will by default select a common firmware name depending on the cvm platform if this variable is left as `null`.
+In case manual firmware selection is preferred it is possible to override the firmware with `var.cvm_cpu_platform.firmware`.
 
 To figure out which firmware paths are available on the libvirt host run the following:
 ```
 virsh domcapabilities --machine q35 --xpath /domainCapabilities/os/loader
 ```
-Any firmware with "amdsev" in the name is meant for SEV-SNP and any with "intel-tdx" is meant for TDX.
+In general any firmware with "amdsev" in the name is meant for SEV-SNP and any with "intel-tdx" is meant for TDX, but the names can vary.
 
 ## sev-guest in Ubuntu cloud images
 `sev-guest` is not available in Ubuntu cloud images (before 25.10) without extra packages. Add the following to the cloud-init to enable it:
