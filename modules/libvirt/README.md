@@ -196,7 +196,7 @@ No modules.
 | <a name="input_cvm_name"></a> [cvm\_name](#input\_cvm\_name) | Confidential VM name | `string` | n/a | yes |
 | <a name="input_cvm_network"></a> [cvm\_network](#input\_cvm\_network) | Libvirt network | `string` | `"default"` | no |
 | <a name="input_cvm_ram"></a> [cvm\_ram](#input\_cvm\_ram) | RAM size of the machine in MB | `number` | `4096` | no |
-| <a name="input_cvm_secure_boot"></a> [cvm\_secure\_boot](#input\_cvm\_secure\_boot) | Whether Secure Boot should be enabled in the firmware (yes, no). Default (not set): let libvirt decide based on the available firmware. | `optional(bool)` | n/a | yes |
+| <a name="input_cvm_secure_boot"></a> [cvm\_secure\_boot](#input\_cvm\_secure\_boot) | Whether Secure Boot should be enabled in the firmware (yes, no). Default (not set): let libvirt decide based on the available firmware. | `bool` | `null` | no |
 | <a name="input_cvm_ssh_pubkey"></a> [cvm\_ssh\_pubkey](#input\_cvm\_ssh\_pubkey) | Path to the public key used for SSH connection | `string` | `"~/.ssh/id_rsa.pub"` | no |
 | <a name="input_cvm_username"></a> [cvm\_username](#input\_cvm\_username) | CVM Username for SSH login | `string` | `"tower"` | no |
 | <a name="input_cvm_vcpus"></a> [cvm\_vcpus](#input\_cvm\_vcpus) | Number of vcpus (cores) | `number` | `1` | no |
