@@ -20,7 +20,7 @@ packages:
   - qemu-guest-agent
 
 write_files:
-  # Set environment variables for cbclient systemd service
+  # Set environment variables for cb-inspector-client systemd service
   - path: /etc/canarybit/tokens
     permissions: '0600'
     defer: true
@@ -41,8 +41,8 @@ write_files:
     content: |
       ${CUSTOM_POLICY}
 
-  # Configure cbclient as a System service
-  - path: /etc/systemd/system/cbclient.service
+  # Configure cb-inspector-client as a System service
+  - path: /etc/systemd/system/cb-inspector-client.service
     defer: true
     permissions: '0600'
     content: |
@@ -51,15 +51,15 @@ write_files:
       
       [Service]
       EnvironmentFile=/etc/canarybit/tokens
-      Environment="CBCLIENT_LOG_LEVEL=info"
-      Environment="CBCLIENT_ENVIRONMENTS=${ENVIRONMENTS}"
-      Environment="CBCLIENT_INSPECTOR_URL=${CBINSPECTOR_URL}"
-      Environment="CBCLIENT_ANNOTATIONS=${CBCLIENT_ANNOTATIONS}"
+      Environment="CB_INSPECTOR_CLIENT_LOG_LEVEL=info"
+      Environment="CB_INSPECTOR_CLIENT_ENVIRONMENTS=${ENVIRONMENTS}"
+      Environment="CB_INSPECTOR_CLIENT_INSPECTOR_URL=${CB_INSPECTOR_URL}"
+      Environment="CB_INSPECTOR_CLIENT_ANNOTATIONS=${CB_INSPECTOR_CLIENT_ANNOTATIONS}"
       Type=oneshot
-      ExecStart=/bin/bash -c '/usr/local/bin/cbclient attestation --token $$(cb login inspector) --key /etc/canarybit/signing-key.pem ${CUSTOM_POLICY_OPT}'
+      ExecStart=/bin/bash -c '/usr/local/bin/cb-inspector-client --token $$(cb login inspector) --key /etc/canarybit/signing-key.pem ${CUSTOM_POLICY_OPT}'
 
-  # Set a frequency for cbclient.service
-  - path: /etc/systemd/system/cbclient.timer
+  # Set a frequency for cb-inspector-client.service
+  - path: /etc/systemd/system/cb-inspector-client.timer
     defer: true
     permissions: '0600'
     content: |
@@ -73,8 +73,8 @@ write_files:
       [Install]
       WantedBy=timers.target
 
-  # Initialize the cbclient systemd service
-  - path: /etc/canarybit/launch-cbclient
+  # Initialize the cb-inspector-client systemd service
+  - path: /etc/canarybit/launch-cb-inspector-client
     defer: true
     permissions: '0755'
     content: |
@@ -83,20 +83,20 @@ write_files:
       # Download the CanaryBit CLI (cb) into /usr/local/bin
       curl -fsSL https://canarybit-public-binaries.s3.eu-west-1.amazonaws.com/cb-cli/${CBCLI_V}/cb-x86_64-unknown-linux-gnu -o cb; chmod +x cb; mv cb /usr/local/bin/cb
 
-      # Download the CanaryBit Inspector agent (cbclient) into /usr/local/bin
-      CB_TOKENS='${CB_TOKENS}' cb download cbclient ${CBCLIENT_V}/cbclient; chmod +x cbclient; mv cbclient /usr/local/bin/cbclient
+      # Download the CanaryBit Inspector agent (cb-inspector-client) into /usr/local/bin
+      CB_TOKENS='${CB_TOKENS}' cb download cb-inspector-client ${CB_INSPECTOR_CLIENT_V}/cb-inspector-client; chmod +x ${CB_INSPECTOR_CLIENT_V}/cb-inspector-client; mv ${CB_INSPECTOR_CLIENT_V}/cb-inspector-client /usr/local/bin/cb-inspector-client
 
-      # Start cbclient as System service once and then a defined frequency
-      systemctl start cbclient.service
-      systemctl enable --now cbclient.timer
+      # Start cb-inspector-client as System service once and then a defined frequency
+      systemctl start cb-inspector-client.service
+      systemctl enable --now cb-inspector-client.timer
 
 runcmd:
   # Enable qemu-agent for IP retrieval
   - systemctl enable --now qemu-guest-agent
-  # Launch cbclient as systemd service
-  - /etc/canarybit/launch-cbclient
+  # Launch cb-inspector-client as systemd service
+  - /etc/canarybit/launch-cb-inspector-client
 
 final_message: |
   ==========   CANARYBIT TOWER SETUP COMPLETED IN $UPTIME secs    ==========
   The security and privacy of this environment is verified by CanaryBit Remote Attestation service:
-  ${CBINSPECTOR_URL}
+  ${CB_INSPECTOR_URL}

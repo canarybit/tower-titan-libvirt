@@ -24,12 +24,12 @@ variable "cvm_cpu_platform" {
   EOT
 
   type = object({
-    type = string
+    type     = string
     firmware = optional(string)
   })
 
   validation {
-    condition = contains(["snp", "tdx"], var.cvm_cpu_platform.type)
+    condition     = contains(["snp", "tdx"], var.cvm_cpu_platform.type)
     error_message = "The value has to be one of the following: ['snp', 'tdx']"
   }
 }
@@ -47,16 +47,16 @@ variable "cvm_cloud_image" {
 variable "remote_attestation" {
   description = "Enable CanaryBit Remote Attestation"
   type = object({
-    cbinspector_url     = optional(string, "https://api.inspector.confidentialcloud.io")
-    cbclient_version    = optional(string, "0.3.2")
-    cbcli_version       = optional(string, "0.2.5")
-    signing_key         = optional(string)
-    custom_policy_file  = optional(string)
-    frequency           = optional(string, "daily")
+    cb_inspector_url            = optional(string, "https://api.inspector.confidentialcloud.io")
+    cb_inspector_client_version = optional(string, "0.1.0")
+    cbcli_version               = optional(string, "0.2.6")
+    signing_key                 = optional(string)
+    custom_policy_file          = optional(string)
+    frequency                   = optional(string, "daily")
   })
 
   validation {
-    condition = contains(["minutely", "hourly", "daily", "weekly", "monthly"], var.remote_attestation.frequency)
+    condition     = contains(["minutely", "hourly", "daily", "weekly", "monthly"], var.remote_attestation.frequency)
     error_message = "The frequency has to be one of the following: minutely, hourly, daily, weekly, monthly"
   }
 }
@@ -157,6 +157,6 @@ variable "cvm_network" {
 
 variable "cvm_annotations" {
   description = "Custom annotations in \"<Key>\" = \"<Value>\" format"
-  type        = map
+  type        = map(any)
   default     = {}
 }
