@@ -193,6 +193,7 @@ No modules.
 | <a name="input_cvm_disk_size_gb"></a> [cvm\_disk\_size\_gb](#input\_cvm\_disk\_size\_gb) | CVM Disk size | `number` | `30` | no |
 | <a name="input_cvm_gateway"></a> [cvm\_gateway](#input\_cvm\_gateway) | Default gateway for machine. Ignored if cvm\_ip4 is set to dhcp | `string` | `null` | no |
 | <a name="input_cvm_ip4"></a> [cvm\_ip4](#input\_cvm\_ip4) | IP address of machine or dhcp for dynamic assignment | `string` | `"dhcp"` | no |
+| <a name="input_cvm_launch_policy"></a> [cvm\_launch\_policy](#input\_cvm\_launch\_policy) | Launch security policy | `number` | `null` | no |
 | <a name="input_cvm_name"></a> [cvm\_name](#input\_cvm\_name) | Confidential VM name | `string` | n/a | yes |
 | <a name="input_cvm_network"></a> [cvm\_network](#input\_cvm\_network) | Libvirt network | `string` | `"default"` | no |
 | <a name="input_cvm_ram"></a> [cvm\_ram](#input\_cvm\_ram) | RAM size of the machine in MB | `number` | `4096` | no |

@@ -22,13 +22,21 @@ locals {
     CB_INSPECTOR_CLIENT_ANNOTATIONS = join(",", formatlist("%s=%s", keys(local.annotations), values(local.annotations)))
   }, var.cloud_init.extra_args)
 
+  launch_policy_defaults = {
+    snp = 196608
+    tdx = 268435456
+  }
+
+  launch_security_policy = coalesce(var.cvm_launch_policy, local.launch_policy_defaults[var.cvm_cpu_platform.type])
+
   // Libvirt launch_security config depending on hardware type
   launch_security = ({
     sevsnp = var.cvm_cpu_platform.type == "snp" ? {
       cbit_pos = 51
-      policy   = 196608 // 0x00030000
+      policy   = local.launch_security_policy
     } : null
     tdx = var.cvm_cpu_platform.type == "tdx" ? {
+      policy = local.launch_security_policy
       quote_generation_service = {
         path = "/var/run/tdx-qgs/qgs.socket"
       }

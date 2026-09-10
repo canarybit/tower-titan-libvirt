@@ -67,6 +67,12 @@ variable "cvm_secure_boot" {
   default = null
 }
 
+variable "cvm_launch_policy" {
+  description = "Launch security policy"
+  type        = number
+  default     = null
+}
+
 ///////////////////////
 // DEFAULT
 ///////////////////////
