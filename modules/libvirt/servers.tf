@@ -9,11 +9,15 @@ resource "libvirt_domain" "cvm" {
   // Annotations
   metadata = {
     xml = <<EOFXML
-      <canarybit:annotations xmlns:canarybit="https://canarybit.eu/libvirt/metadata/1.0">
-        %{ for k, v in local.annotations ~}
-        <annotation>${k}-${v}</annotation>
-        %{ endfor ~}
+      <canarybit:annotations xmlns:canarybit="canarybit.eu">
+        <annotation>canarybit-tower</annotation>
+        <annotation>enclaveid-${substr(data.local_file.signing-key-fingerprint.content,0,8)}</annotation>
       </canarybit:annotations>
+      %{ for k, v in var.cvm_annotations ~}
+      <custom:annotations xmlns:custom="custom">
+        <annotation>${k}-${v}</annotation>
+      </custom:annotations>
+      %{ endfor ~}
     EOFXML
   }
 

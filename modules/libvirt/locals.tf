@@ -1,26 +1,29 @@
 locals {
-  // Merge default with custom annotations
-  annotations = merge(var.cvm_annotations, {
-    "canarybit" = "tower"
-  })
-
   // cloud-init config template
-  cloud_init_args = merge({
-    HOSTNAME   = var.cvm_name
-    USERNAME   = var.cvm_username
-    SSH_PUBKEY = file(var.cvm_ssh_pubkey)
-    // CanaryBit Remote Attestation
-    CB_TOKENS                       = data.http.cblogin.*.response_body[0]
-    CB_INSPECTOR_URL                 = var.remote_attestation.cb_inspector_url
-    CB_INSPECTOR_CLIENT_V           = var.remote_attestation.cb_inspector_client_version
-    CBCLI_V                         = var.remote_attestation.cbcli_version
-    ENVIRONMENTS                    = var.cvm_cpu_platform.type
-    CUSTOM_POLICY_OPT               = var.remote_attestation.custom_policy_file != null ? "--policy /etc/canarybit/custom-policy.rego" : ""
-    CUSTOM_POLICY                   = var.remote_attestation.custom_policy_file != null ? indent(6, file(var.remote_attestation.custom_policy_file)) : ""
-    FREQUENCY                       = var.remote_attestation.frequency
-    SIGNING_KEY                     = indent(6, tls_private_key.rsa-4096.private_key_pem_pkcs8)
-    CB_INSPECTOR_CLIENT_ANNOTATIONS = join(",", formatlist("%s=%s", keys(local.annotations), values(local.annotations)))
-  }, var.cloud_init.extra_args)
+  cloud_init_args = merge(
+    {
+      HOSTNAME   = var.cvm_name
+      USERNAME   = var.cvm_username
+      SSH_PUBKEY = file(var.cvm_ssh_pubkey)
+      // CanaryBit Remote Attestation
+      CB_TOKENS                       = data.http.cblogin.*.response_body[0]
+      CB_INSPECTOR_URL                 = var.remote_attestation.cb_inspector_url
+      CB_INSPECTOR_CLIENT_V           = var.remote_attestation.cb_inspector_client_version
+      CBCLI_V                         = var.remote_attestation.cbcli_version
+      ENVIRONMENTS                    = var.cvm_cpu_platform.type
+      CUSTOM_POLICY_OPT               = var.remote_attestation.custom_policy_file != null ? "--policy /etc/canarybit/custom-policy.rego" : ""
+      CUSTOM_POLICY                   = var.remote_attestation.custom_policy_file != null ? indent(6, file(var.remote_attestation.custom_policy_file)) : ""
+      FREQUENCY                       = var.remote_attestation.frequency
+      SIGNING_KEY                     = indent(6, tls_private_key.rsa-4096.private_key_pem_pkcs8)
+      CB_INSPECTOR_CLIENT_ANNOTATIONS = join(",",
+        [for k,v in var.cvm_annotations : "${k}=${v}"],
+        ["canarybit.eu/provisioner=tower"],
+        ["canarybit.eu/resource=cvm"],
+        ["canarybit.eu/platform=libvirt"],
+      )
+    },
+    var.cloud_init.extra_args
+  )
 
   launch_policy_defaults = {
     snp = 196608
