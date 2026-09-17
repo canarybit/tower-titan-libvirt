@@ -63,8 +63,8 @@ variable "remote_attestation" {
 
 variable "cvm_secure_boot" {
   description = "Whether Secure Boot should be enabled in the firmware (yes, no). Default (not set): let libvirt decide based on the available firmware."
-  type = bool
-  default = null
+  type        = bool
+  default     = null
 }
 
 variable "cvm_launch_policy" {
@@ -76,6 +76,40 @@ variable "cvm_launch_policy" {
 ///////////////////////
 // DEFAULT
 ///////////////////////
+variable "cvm_snp_policy" {
+  description = "Optional SEV-SNP guest policy settings"
+
+  // The fields below map directly to the documented SEV-SNP policy bits.
+  // Reserved bits 63:26 and mandatory bit 17 are managed automatically.
+  // SMT is enabled by default but can be explicitly disabled.
+  type = object({
+    page_swap_disable      = optional(bool, false)
+    ciphertext_hiding_dram = optional(bool, false)
+    rapl_dis               = optional(bool, false)
+    mem_aes_256_xts        = optional(bool, false)
+    cxl_allow              = optional(bool, false)
+    single_socket          = optional(bool, false)
+    debug                  = optional(bool, false)
+    migrate_ma             = optional(bool, false)
+    smt                    = optional(bool, true)
+    abi_major              = optional(number, 0)
+    abi_minor              = optional(number, 0)
+  })
+  default = null
+
+  validation {
+    condition = var.cvm_snp_policy == null || (
+      var.cvm_snp_policy.abi_major >= 0 &&
+      var.cvm_snp_policy.abi_major <= 255 &&
+      floor(var.cvm_snp_policy.abi_major) == var.cvm_snp_policy.abi_major &&
+      var.cvm_snp_policy.abi_minor >= 0 &&
+      var.cvm_snp_policy.abi_minor <= 255 &&
+      floor(var.cvm_snp_policy.abi_minor) == var.cvm_snp_policy.abi_minor
+    )
+    error_message = "cvm_snp_policy abi_major and abi_minor must be integers between 0 and 255."
+  }
+}
+
 variable "cloud_init" {
   description = "Custom cloud-init configuration"
   type = object({

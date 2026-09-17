@@ -99,6 +99,53 @@ For Example:
 
 If `var.cvm_secure_boot` is set to `true` and there is no firmware with secure boot support, then the selection will fail. The same can happen in reverse if secure boot is disabled, but only secure boot firmware is available. By default the variable is set to `null`, which will then let libvirt pick the firmware with highest priority.
 
+## Launch policies
+The `cvm_launch_policy` setting controls the policy passed to the confidential VM launch-security configuration. It accepts the complete numeric policy value, for example `196608` (`0x30000`) for the default SNP policy.
+
+For SEV-SNP, `cvm_snp_policy` provides a readable object-based alternative. The module converts its fields into the numeric policy automatically. The policy layout follows the [AMD SEV Secure Nested Paging Firmware ABI Specification (56860), page 31](https://www.amd.com/content/dam/amd/en/documents/developer/56860.pdf#page=31).
+
+Policy selection precedence is:
+
+1. `cvm_launch_policy`, when provided.
+2. The converted `cvm_snp_policy`, for SNP guests.
+3. The platform default when neither custom policy is provided.
+
+The reserved bits `63:26` are always zero. Bit `17` is always set to one because it is required by the SNP policy specification. Bit `16` (`SMT`) defaults to one but can be explicitly disabled.
+
+### SEV-SNP policy fields
+
+Configure the policy:
+
+```hcl
+cvm_snp_policy = {
+  page_swap_disable      = true
+  ciphertext_hiding_dram = false
+  rapl_dis               = false
+  mem_aes_256_xts        = false
+  cxl_allow              = false
+  single_socket          = false
+  debug                  = false
+  migrate_ma             = false
+  smt                    = true
+  abi_major              = 0
+  abi_minor              = 0
+}
+```
+
+| Field | Bit(s) | Description |
+|-------|--------|-------------|
+| `page_swap_disable` | 25 | Disable guest access to SNP page move and swap commands when `true`. |
+| `ciphertext_hiding_dram` | 24 | Require DRAM ciphertext hiding when `true`. |
+| `rapl_dis` | 23 | Require Running Average Power Limit (RAPL) to be disabled when `true`. |
+| `mem_aes_256_xts` | 22 | Require AES-256 XTS memory encryption when `true`; otherwise AES-128 XEX is also allowed. |
+| `cxl_allow` | 21 | Allow CXL devices or memory when `true`. |
+| `single_socket` | 20 | Restrict guest activation to one socket when `true`. |
+| `debug` | 19 | Allow debugging when `true`; debugging is otherwise disallowed. |
+| `migrate_ma` | 18 | Allow association with a migration agent when `true`. |
+| `smt` | 16 | Allow SMT when `true`; defaults to `true`. |
+| `abi_major` | 15:8 | Minimum ABI major version required by the guest. Must be an integer from 0 to 255. |
+| `abi_minor` | 7:0 | Minimum ABI minor version required by the guest. Must be an integer from 0 to 255. |
+
 ## sev-guest in Ubuntu cloud images
 `sev-guest` is not available in Ubuntu cloud images (before 25.10) without extra packages. Add the following to the cloud-init to enable it:
 
@@ -198,6 +245,7 @@ No modules.
 | <a name="input_cvm_network"></a> [cvm\_network](#input\_cvm\_network) | Libvirt network | `string` | `"default"` | no |
 | <a name="input_cvm_ram"></a> [cvm\_ram](#input\_cvm\_ram) | RAM size of the machine in MB | `number` | `4096` | no |
 | <a name="input_cvm_secure_boot"></a> [cvm\_secure\_boot](#input\_cvm\_secure\_boot) | Whether Secure Boot should be enabled in the firmware (yes, no). Default (not set): let libvirt decide based on the available firmware. | `bool` | `null` | no |
+| <a name="input_cvm_snp_policy"></a> [cvm\_snp\_policy](#input\_cvm\_snp\_policy) | Optional SEV-SNP guest policy settings | <pre>object({<br/>    page_swap_disable      = optional(bool, false)<br/>    ciphertext_hiding_dram = optional(bool, false)<br/>    rapl_dis               = optional(bool, false)<br/>    mem_aes_256_xts        = optional(bool, false)<br/>    cxl_allow              = optional(bool, false)<br/>    single_socket          = optional(bool, false)<br/>    debug                  = optional(bool, false)<br/>    migrate_ma             = optional(bool, false)<br/>    smt                    = optional(bool, true)<br/>    abi_major              = optional(number, 0)<br/>    abi_minor              = optional(number, 0)<br/>  })</pre> | `null` | no |
 | <a name="input_cvm_ssh_pubkey"></a> [cvm\_ssh\_pubkey](#input\_cvm\_ssh\_pubkey) | Path to the public key used for SSH connection | `string` | `"~/.ssh/id_rsa.pub"` | no |
 | <a name="input_cvm_username"></a> [cvm\_username](#input\_cvm\_username) | CVM Username for SSH login | `string` | `"tower"` | no |
 | <a name="input_cvm_vcpus"></a> [cvm\_vcpus](#input\_cvm\_vcpus) | Number of vcpus (cores) | `number` | `1` | no |
