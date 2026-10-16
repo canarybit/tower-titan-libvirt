@@ -171,6 +171,12 @@ variable "cvm_cpu" {
   default     = "host-passthrough"
 }
 
+variable "cvm_firmware" {
+  description = "Path to firmware (OVMF.fd)"
+  type        = string
+  default     = null # Default depends on cvm_platform, see locals
+}
+
 variable "cvm_vcpus" {
   description = "Number of vcpus (cores)"
   type        = number
@@ -189,14 +195,31 @@ variable "cvm_disk_size_gb" {
   default     = 30
 }
 
+variable "cvm_gpu" {
+  description = "Enable GPU passthrough"
+  type        = bool
+  default     = false
+}
+
+variable "cvm_gpu_type" {
+  description = "GPU type; Required when cvm_gpu is true."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.cvm_gpu_type == null ? true : contains(["nvidia"], lower(var.cvm_gpu_type))
+    error_message = "cvm_gpu_type must be \"nvidia\" when specified."
+  }
+}
+
 variable "cvm_network" {
   description = "Libvirt network"
   type        = string
   default     = "default"
 }
 
-variable "cvm_annotations" {
-  description = "Custom annotations in \"<Key>\" = \"<Value>\" format"
-  type        = map(any)
-  default     = {}
+variable "gpu_bus" {
+  description = "domain:bus:device.function can be fetched with 'lspci | grep -i nvidia'"
+  type        = number
+  default     = 2
 }

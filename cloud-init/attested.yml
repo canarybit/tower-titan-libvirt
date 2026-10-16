@@ -18,6 +18,10 @@ packages:
   - libtss2-dev
   - jq
   - qemu-guest-agent
+%{ if GPU_ENABLED && GPU_TYPE == "nvidia" }
+  - nvidia-driver-595-open
+  - nvidia-utils-595
+%{ endif }
 
 write_files:
   # Set environment variables for cb-inspector-client systemd service

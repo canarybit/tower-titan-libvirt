@@ -1,3 +1,20 @@
+locals {
+  // TODO: TDX is untested
+  cvm_firmware = var.cvm_firmware != null ? var.cvm_firmware : var.cvm_platform == "snp" ? "/usr/share/ovmf/OVMF.amdsev.fd" : "/usr/share/edk2/ovmf/OVMF.inteltdx.fd"
+
+  launch_security = var.cvm_platform == null ? null : {
+    sevsnp = var.cvm_platform == "snp" ? {
+      cbit_pos = 51
+      policy   = 196608 // 0x00030000
+    } : null
+    tdx = var.cvm_platform == "tdx" ? {
+      quote_generation_service = {
+        path = "/var/run/tdx-qgs/qgs.socket"
+      }
+    } : null
+  }
+}
+
 resource "libvirt_domain" "cvm" {
   name        = var.cvm_name
   memory      = var.cvm_ram
@@ -6,38 +23,16 @@ resource "libvirt_domain" "cvm" {
   type        = "kvm"
   running     = true
 
-  // Annotations
-  metadata = {
-    xml = <<EOFXML
-      <canarybit:annotations xmlns:canarybit="canarybit.eu">
-        <annotation>canarybit-tower</annotation>
-        <annotation>enclaveid-${substr(data.local_file.signing-key-fingerprint.content,0,8)}</annotation>
-      </canarybit:annotations>
-      %{ for k, v in var.cvm_annotations ~}
-      <custom:annotations xmlns:custom="custom">
-        <annotation>${k}-${v}</annotation>
-      </custom:annotations>
-      %{ endfor ~}
-    EOFXML
-  }
+
 
   os = {
     type             = "hvm"
     type_arch        = "x86_64"
     type_machine     = "q35"
-    loader_readonly  = var.cvm_cpu_platform.type == "tdx" ? "yes" : null
+    loader           = local.cvm_firmware
     loader_stateless = "yes"
-    // Prioritize explicit firmware when set
-    loader   = var.cvm_cpu_platform.firmware != null ? var.cvm_cpu_platform.firmware : ""
-    firmware = var.cvm_cpu_platform.firmware == null ? "efi" : null
-    firmware_info = var.cvm_secure_boot == null ? null : {
-      features = [
-        {
-          name = "secure-boot",
-          enabled = var.cvm_secure_boot ? "yes" : "no"
-        }
-      ]
-    }
+    loader_readonly  = "yes"
+    # firmware = "efi"   # Uncomment if you want firmware auto-selection (newer libvirt)
   }
 
   features = {
@@ -45,12 +40,40 @@ resource "libvirt_domain" "cvm" {
   }
 
   devices = {
+
+
+    hostdevs = var.cvm_gpu ? [
+      {
+        mode    = "subsystem"
+        type    = "pci"
+        managed = true
+
+        subsys_pci = {
+          driver = {
+            name = "vfio"
+          }
+          source = {
+            address = {
+              domain   = 0
+              bus      = var.gpu_bus
+              slot     = 0
+              function = 0
+            }
+          }
+          address = {
+            type = "pci"
+            bus  = 10
+          }
+        }
+      }
+    ] : []
     controllers = [
       {
         type  = "scsi"
         model = "virtio-scsi"
       }
     ]
+
     disks = [
       {
         source = {
@@ -84,10 +107,13 @@ resource "libvirt_domain" "cvm" {
         }
       }
     ]
+
     interfaces = [
       {
-        type  = "network"
-        model = { type = "virtio" }
+        type = "network"
+        model = {
+          type = "virtio"
+        }
         source = {
           network = {
             network = var.cvm_network
@@ -98,16 +124,15 @@ resource "libvirt_domain" "cvm" {
     ]
   }
 
+  # These are now valid top-level blocks/arguments in v0.9+
   memory_backing = {
     memory_access = {
       mode = "shared"
     }
-
     memory_source = {
       type = "memfd"
     }
   }
-
   cpu = {
     mode  = var.cvm_cpu
     check = "none"
@@ -117,5 +142,12 @@ resource "libvirt_domain" "cvm" {
 
   destroy = {
     undefine = true
+  }
+
+  lifecycle {
+    precondition {
+      condition     = !var.cvm_gpu || var.cvm_gpu_type != null
+      error_message = "Set cvm_gpu_type when cvm_gpu is true."
+    }
   }
 }

@@ -70,6 +70,15 @@ Some resources to why these assumptions are needed:
 - https://docs.cloud-init.io/en/latest/reference/network-config-format-v2.html#network-config-v2
 - https://www.freedesktop.org/wiki/Software/systemd/PredictableNetworkInterfaceNames/
 
+### GPU passthrough
+
+Set `cvm_gpu = true` and select `cvm_gpu_type = "nvidia"` to enable GPU passthrough and install the NVIDIA drivers in the guest. A GPU type must be selected when GPU passthrough is enabled; currently only NVIDIA GPUs are supported. By default, GPU passthrough and driver installation are disabled. Configure `gpu_bus` for the host GPU when enabling passthrough.
+
+```hcl
+cvm_gpu      = true
+cvm_gpu_type = "nvidia"
+```
+
 ## QEMU-agent
 qemu-agent (or qemu-guest-agent), is used to report information about the vm, such as the assigned IP. The cloud-init templates in this module installs, enables and starts qemu-guest-agent.
 
@@ -233,12 +242,14 @@ No modules.
 | <a name="input_cb_password"></a> [cb\_password](#input\_cb\_password) | CanaryBit password | `string` | n/a | yes |
 | <a name="input_cb_username"></a> [cb\_username](#input\_cb\_username) | CanaryBit username | `string` | n/a | yes |
 | <a name="input_cloud_init"></a> [cloud\_init](#input\_cloud\_init) | Custom cloud-init configuration | <pre>object({<br/>    custom_path = optional(string)<br/>    extra_args  = optional(map(any), {})<br/>  })</pre> | `{}` | no |
-| <a name="input_cvm_annotations"></a> [cvm\_annotations](#input\_cvm\_annotations) | Custom annotations in "<Key>" = "<Value>" format | `map(any)` | `{}` | no |
 | <a name="input_cvm_cloud_image"></a> [cvm\_cloud\_image](#input\_cvm\_cloud\_image) | Path to the CVM cloud image. The image is assumed to be already uploaded to Libvirt. | `string` | n/a | yes |
 | <a name="input_cvm_cpu"></a> [cvm\_cpu](#input\_cvm\_cpu) | CPU type | `string` | `"host-passthrough"` | no |
 | <a name="input_cvm_cpu_platform"></a> [cvm\_cpu\_platform](#input\_cvm\_cpu\_platform) | Type of Confidential CPU hardware platform<br/>cvm\_cpu\_platform = {<br/>  type     - CPU hardware type: ['snp', 'tdx']<br/>  firmware - (Optional) Path to custom firmware OVMF file.<br/>} | <pre>object({<br/>    type     = string<br/>    firmware = optional(string)<br/>  })</pre> | n/a | yes |
 | <a name="input_cvm_disk_size_gb"></a> [cvm\_disk\_size\_gb](#input\_cvm\_disk\_size\_gb) | CVM Disk size | `number` | `30` | no |
+| <a name="input_cvm_firmware"></a> [cvm\_firmware](#input\_cvm\_firmware) | Path to firmware (OVMF.fd) | `string` | `null` | no |
 | <a name="input_cvm_gateway"></a> [cvm\_gateway](#input\_cvm\_gateway) | Default gateway for machine. Ignored if cvm\_ip4 is set to dhcp | `string` | `null` | no |
+| <a name="input_cvm_gpu"></a> [cvm\_gpu](#input\_cvm\_gpu) | Enable GPU passthrough | `bool` | `false` | no |
+| <a name="input_cvm_gpu_type"></a> [cvm\_gpu\_type](#input\_cvm\_gpu\_type) | GPU type; Required when cvm\_gpu is true. | `string` | `null` | no |
 | <a name="input_cvm_ip4"></a> [cvm\_ip4](#input\_cvm\_ip4) | IP address of machine or dhcp for dynamic assignment | `string` | `"dhcp"` | no |
 | <a name="input_cvm_launch_policy"></a> [cvm\_launch\_policy](#input\_cvm\_launch\_policy) | Launch security policy | `number` | `null` | no |
 | <a name="input_cvm_name"></a> [cvm\_name](#input\_cvm\_name) | Confidential VM name | `string` | n/a | yes |
@@ -249,6 +260,7 @@ No modules.
 | <a name="input_cvm_ssh_pubkey"></a> [cvm\_ssh\_pubkey](#input\_cvm\_ssh\_pubkey) | Path to the public key used for SSH connection | `string` | `"~/.ssh/id_rsa.pub"` | no |
 | <a name="input_cvm_username"></a> [cvm\_username](#input\_cvm\_username) | CVM Username for SSH login | `string` | `"tower"` | no |
 | <a name="input_cvm_vcpus"></a> [cvm\_vcpus](#input\_cvm\_vcpus) | Number of vcpus (cores) | `number` | `1` | no |
+| <a name="input_gpu_bus"></a> [gpu\_bus](#input\_gpu\_bus) | domain:bus:device.function can be fetched with 'lspci \| grep -i nvidia' | `number` | `2` | no |
 | <a name="input_libvirt_pool"></a> [libvirt\_pool](#input\_libvirt\_pool) | Libvirt pool | `string` | `"default"` | no |
 | <a name="input_remote_attestation"></a> [remote\_attestation](#input\_remote\_attestation) | Enable CanaryBit Remote Attestation | <pre>object({<br/>    cb_inspector_url            = optional(string, "https://api.inspector.confidentialcloud.io")<br/>    cb_inspector_client_version = optional(string, "0.1.0")<br/>    cbcli_version               = optional(string, "0.2.6")<br/>    signing_key                 = optional(string)<br/>    custom_policy_file          = optional(string)<br/>    frequency                   = optional(string, "daily")<br/>  })</pre> | n/a | yes |
 
