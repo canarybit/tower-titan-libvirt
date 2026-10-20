@@ -29,3 +29,11 @@ jobs:
         output-file: README.md
         output-method: inject
         git-push: "true"
+
+    - name: Render OpenStack cVM Terraform docs and push changes back to PR
+      uses: terraform-docs/gh-actions@main
+      with:
+        working-dir: ./modules/openstack
+        output-file: README.md
+        output-method: inject
+        git-push: "true"
