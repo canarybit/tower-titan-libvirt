@@ -1,6 +1,10 @@
 # Signing key
 output/
 
+# Examples
+/examples/**/*.lock.hcl
+/examples/**/*.rego
+
 # Local .terraform directories
 .terraform/
 
