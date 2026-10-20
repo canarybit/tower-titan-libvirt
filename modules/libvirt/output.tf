@@ -16,7 +16,7 @@ output "cvm-info" {
   Username:       ${var.cvm_username}
 
   EnclaveID / Signing Key Fingerprint:
-    ${data.local_file.signing-key-fingerprint.content}
+    ${module.commons.enclave_id}
 
   EOF
 }

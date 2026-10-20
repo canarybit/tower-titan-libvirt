@@ -72,11 +72,15 @@ Some resources to why these assumptions are needed:
 
 ### GPU passthrough
 
-Set `cvm_gpu = true` and select `cvm_gpu_type = "nvidia"` to enable GPU passthrough and install the NVIDIA drivers in the guest. A GPU type must be selected when GPU passthrough is enabled; currently only NVIDIA GPUs are supported. By default, GPU passthrough and driver installation are disabled. Configure `gpu_bus` for the host GPU when enabling passthrough.
+Select `var.cvm_platform.gpu.type = "nvidia"` to enable GPU passthrough and install the NVIDIA drivers in the guest. A GPU type must be selected when GPU passthrough is enabled; currently only NVIDIA GPUs are supported. By default, GPU passthrough and driver installation are disabled. Configure `var.cvm_platform.gpu.bus` for the host GPU when enabling passthrough.
 
 ```hcl
-cvm_gpu      = true
-cvm_gpu_type = "nvidia"
+cvm_platform = {
+  cpu = ...
+  gpu = {
+    type = "nvidia"
+  }
+}
 ```
 
 ## QEMU-agent
@@ -210,15 +214,13 @@ Users of Terragrunt can achieve similar results by using modules provided in the
 
 | Name | Version |
 |------|---------|
-| <a name="provider_http"></a> [http](#provider\_http) | n/a |
 | <a name="provider_libvirt"></a> [libvirt](#provider\_libvirt) | 0.9.5 |
-| <a name="provider_local"></a> [local](#provider\_local) | n/a |
-| <a name="provider_null"></a> [null](#provider\_null) | n/a |
-| <a name="provider_tls"></a> [tls](#provider\_tls) | n/a |
 
 ## Modules
 
-No modules.
+| Name | Source | Version |
+|------|--------|---------|
+| <a name="module_commons"></a> [commons](#module\_commons) | https://canarybit-public-binaries.s3.eu-west-1.amazonaws.com/tower-commons/v0.1.0/tower-commons.zip | n/a |
 
 ## Resources
 
@@ -228,12 +230,7 @@ No modules.
 | [libvirt_domain.cvm](https://registry.terraform.io/providers/dmacvicar/libvirt/0.9.5/docs/resources/domain) | resource |
 | [libvirt_volume.cloudinit](https://registry.terraform.io/providers/dmacvicar/libvirt/0.9.5/docs/resources/volume) | resource |
 | [libvirt_volume.overlay](https://registry.terraform.io/providers/dmacvicar/libvirt/0.9.5/docs/resources/volume) | resource |
-| [local_sensitive_file.signing-key](https://registry.terraform.io/providers/hashicorp/local/latest/docs/resources/sensitive_file) | resource |
-| [null_resource.signing-key-fingerprint](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
-| [tls_private_key.rsa-4096](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/private_key) | resource |
-| [http_http.cblogin](https://registry.terraform.io/providers/hashicorp/http/latest/docs/data-sources/http) | data source |
 | [libvirt_domain_interface_addresses.cvm](https://registry.terraform.io/providers/dmacvicar/libvirt/0.9.5/docs/data-sources/domain_interface_addresses) | data source |
-| [local_file.signing-key-fingerprint](https://registry.terraform.io/providers/hashicorp/local/latest/docs/data-sources/file) | data source |
 
 ## Inputs
 
@@ -242,11 +239,10 @@ No modules.
 | <a name="input_cb_password"></a> [cb\_password](#input\_cb\_password) | CanaryBit password | `string` | n/a | yes |
 | <a name="input_cb_username"></a> [cb\_username](#input\_cb\_username) | CanaryBit username | `string` | n/a | yes |
 | <a name="input_cloud_init"></a> [cloud\_init](#input\_cloud\_init) | Custom cloud-init configuration | <pre>object({<br/>    custom_path = optional(string)<br/>    extra_args  = optional(map(any), {})<br/>  })</pre> | `{}` | no |
+| <a name="input_cvm_annotations"></a> [cvm\_annotations](#input\_cvm\_annotations) | Custom annotations in "<Key>" = "<Value>" format | `map(any)` | `{}` | no |
 | <a name="input_cvm_cloud_image"></a> [cvm\_cloud\_image](#input\_cvm\_cloud\_image) | Path to the CVM cloud image. The image is assumed to be already uploaded to Libvirt. | `string` | n/a | yes |
 | <a name="input_cvm_cpu"></a> [cvm\_cpu](#input\_cvm\_cpu) | CPU type | `string` | `"host-passthrough"` | no |
-| <a name="input_cvm_cpu_platform"></a> [cvm\_cpu\_platform](#input\_cvm\_cpu\_platform) | Type of Confidential CPU hardware platform<br/>cvm\_cpu\_platform = {<br/>  type     - CPU hardware type: ['snp', 'tdx']<br/>  firmware - (Optional) Path to custom firmware OVMF file.<br/>} | <pre>object({<br/>    type     = string<br/>    firmware = optional(string)<br/>  })</pre> | n/a | yes |
 | <a name="input_cvm_disk_size_gb"></a> [cvm\_disk\_size\_gb](#input\_cvm\_disk\_size\_gb) | CVM Disk size | `number` | `30` | no |
-| <a name="input_cvm_firmware"></a> [cvm\_firmware](#input\_cvm\_firmware) | Path to firmware (OVMF.fd) | `string` | `null` | no |
 | <a name="input_cvm_gateway"></a> [cvm\_gateway](#input\_cvm\_gateway) | Default gateway for machine. Ignored if cvm\_ip4 is set to dhcp | `string` | `null` | no |
 | <a name="input_cvm_gpu"></a> [cvm\_gpu](#input\_cvm\_gpu) | Enable GPU passthrough | `bool` | `false` | no |
 | <a name="input_cvm_gpu_type"></a> [cvm\_gpu\_type](#input\_cvm\_gpu\_type) | GPU type; Required when cvm\_gpu is true. | `string` | `null` | no |
@@ -254,15 +250,15 @@ No modules.
 | <a name="input_cvm_launch_policy"></a> [cvm\_launch\_policy](#input\_cvm\_launch\_policy) | Launch security policy | `number` | `null` | no |
 | <a name="input_cvm_name"></a> [cvm\_name](#input\_cvm\_name) | Confidential VM name | `string` | n/a | yes |
 | <a name="input_cvm_network"></a> [cvm\_network](#input\_cvm\_network) | Libvirt network | `string` | `"default"` | no |
+| <a name="input_cvm_platform"></a> [cvm\_platform](#input\_cvm\_platform) | Type of Confidential CPU hardware platform<br/>cvm\_platform = {<br/>  cpu = {<br/>    type     - CPU hardware type: ['snp', 'tdx']<br/>    firmware - (Optional) Path to custom firmware OVMF file.<br/>  }<br/>  gpu = {<br/>    type            - GPU provider: ['nvidia']<br/>    bus             - domain:bus:device.function can be fetched with `lspci | grep -i nvidia'<br/>    driver_version  - Version of the driver to install, the default depends on GPU provider<br/>  }<br/>}<br/>` | <pre>object({<br/>    cpu = object({<br/>      type     = string<br/>      firmware = optional(string)<br/>    })<br/>    gpu = optional(object({<br/>      type = string<br/>      bus  = optional(number, 2)<br/>      driver_version = optional(number)<br/>    }))<br/>  })</pre> | n/a | yes |
 | <a name="input_cvm_ram"></a> [cvm\_ram](#input\_cvm\_ram) | RAM size of the machine in MB | `number` | `4096` | no |
 | <a name="input_cvm_secure_boot"></a> [cvm\_secure\_boot](#input\_cvm\_secure\_boot) | Whether Secure Boot should be enabled in the firmware (yes, no). Default (not set): let libvirt decide based on the available firmware. | `bool` | `null` | no |
 | <a name="input_cvm_snp_policy"></a> [cvm\_snp\_policy](#input\_cvm\_snp\_policy) | Optional SEV-SNP guest policy settings | <pre>object({<br/>    page_swap_disable      = optional(bool, false)<br/>    ciphertext_hiding_dram = optional(bool, false)<br/>    rapl_dis               = optional(bool, false)<br/>    mem_aes_256_xts        = optional(bool, false)<br/>    cxl_allow              = optional(bool, false)<br/>    single_socket          = optional(bool, false)<br/>    debug                  = optional(bool, false)<br/>    migrate_ma             = optional(bool, false)<br/>    smt                    = optional(bool, true)<br/>    abi_major              = optional(number, 0)<br/>    abi_minor              = optional(number, 0)<br/>  })</pre> | `null` | no |
 | <a name="input_cvm_ssh_pubkey"></a> [cvm\_ssh\_pubkey](#input\_cvm\_ssh\_pubkey) | Path to the public key used for SSH connection | `string` | `"~/.ssh/id_rsa.pub"` | no |
 | <a name="input_cvm_username"></a> [cvm\_username](#input\_cvm\_username) | CVM Username for SSH login | `string` | `"tower"` | no |
 | <a name="input_cvm_vcpus"></a> [cvm\_vcpus](#input\_cvm\_vcpus) | Number of vcpus (cores) | `number` | `1` | no |
-| <a name="input_gpu_bus"></a> [gpu\_bus](#input\_gpu\_bus) | domain:bus:device.function can be fetched with 'lspci \| grep -i nvidia' | `number` | `2` | no |
 | <a name="input_libvirt_pool"></a> [libvirt\_pool](#input\_libvirt\_pool) | Libvirt pool | `string` | `"default"` | no |
-| <a name="input_remote_attestation"></a> [remote\_attestation](#input\_remote\_attestation) | Enable CanaryBit Remote Attestation | <pre>object({<br/>    cb_inspector_url            = optional(string, "https://api.inspector.confidentialcloud.io")<br/>    cb_inspector_client_version = optional(string, "0.1.0")<br/>    cbcli_version               = optional(string, "0.2.6")<br/>    signing_key                 = optional(string)<br/>    custom_policy_file          = optional(string)<br/>    frequency                   = optional(string, "daily")<br/>  })</pre> | n/a | yes |
+| <a name="input_remote_attestation"></a> [remote\_attestation](#input\_remote\_attestation) | Enable CanaryBit Remote Attestation | `any` | n/a | yes |
 
 ## Outputs
 

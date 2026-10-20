@@ -1,20 +1,3 @@
-locals {
-  // TODO: TDX is untested
-  cvm_firmware = var.cvm_firmware != null ? var.cvm_firmware : var.cvm_platform == "snp" ? "/usr/share/ovmf/OVMF.amdsev.fd" : "/usr/share/edk2/ovmf/OVMF.inteltdx.fd"
-
-  launch_security = var.cvm_platform == null ? null : {
-    sevsnp = var.cvm_platform == "snp" ? {
-      cbit_pos = 51
-      policy   = 196608 // 0x00030000
-    } : null
-    tdx = var.cvm_platform == "tdx" ? {
-      quote_generation_service = {
-        path = "/var/run/tdx-qgs/qgs.socket"
-      }
-    } : null
-  }
-}
-
 resource "libvirt_domain" "cvm" {
   name        = var.cvm_name
   memory      = var.cvm_ram
@@ -23,16 +6,38 @@ resource "libvirt_domain" "cvm" {
   type        = "kvm"
   running     = true
 
-
+  // Annotations
+  metadata = {
+    xml = <<EOFXML
+      <canarybit:annotations xmlns:canarybit="canarybit.eu">
+        <annotation>canarybit-tower</annotation>
+        <annotation>enclaveid-${substr(module.commons.enclave_id, 0, 8)}</annotation>
+      </canarybit:annotations>
+      %{for k, v in var.cvm_annotations~}
+      <custom:annotations xmlns:custom="custom">
+        <annotation>${k}-${v}</annotation>
+      </custom:annotations>
+      %{endfor~}
+    EOFXML
+  }
 
   os = {
     type             = "hvm"
     type_arch        = "x86_64"
     type_machine     = "q35"
-    loader           = local.cvm_firmware
+    loader_readonly  = var.cvm_platform.cpu.type == "tdx" ? "yes" : null
     loader_stateless = "yes"
-    loader_readonly  = "yes"
-    # firmware = "efi"   # Uncomment if you want firmware auto-selection (newer libvirt)
+    // Prioritize explicit firmware when set
+    loader   = var.cvm_platform.cpu.firmware != null ? var.cvm_platform.cpu.firmware : ""
+    firmware = var.cvm_platform.cpu.firmware == null ? "efi" : null
+    firmware_info = var.cvm_secure_boot == null ? null : {
+      features = [
+        {
+          name    = "secure-boot",
+          enabled = var.cvm_secure_boot ? "yes" : "no"
+        }
+      ]
+    }
   }
 
   features = {
@@ -40,9 +45,7 @@ resource "libvirt_domain" "cvm" {
   }
 
   devices = {
-
-
-    hostdevs = var.cvm_gpu ? [
+    hostdevs = var.cvm_platform.gpu != null ? [
       {
         mode    = "subsystem"
         type    = "pci"
@@ -55,7 +58,7 @@ resource "libvirt_domain" "cvm" {
           source = {
             address = {
               domain   = 0
-              bus      = var.gpu_bus
+              bus      = var.cvm_platform.gpu.bus
               slot     = 0
               function = 0
             }
@@ -73,7 +76,6 @@ resource "libvirt_domain" "cvm" {
         model = "virtio-scsi"
       }
     ]
-
     disks = [
       {
         source = {
@@ -142,12 +144,5 @@ resource "libvirt_domain" "cvm" {
 
   destroy = {
     undefine = true
-  }
-
-  lifecycle {
-    precondition {
-      condition     = !var.cvm_gpu || var.cvm_gpu_type != null
-      error_message = "Set cvm_gpu_type when cvm_gpu is true."
-    }
   }
 }

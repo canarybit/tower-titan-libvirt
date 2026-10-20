@@ -14,23 +14,42 @@ variable "cb_password" {
   sensitive   = true
 }
 
-variable "cvm_cpu_platform" {
+variable "cvm_platform" {
   description = <<-EOT
     Type of Confidential CPU hardware platform
-    cvm_cpu_platform = {
-      type     - CPU hardware type: ['snp', 'tdx']
-      firmware - (Optional) Path to custom firmware OVMF file.
+    cvm_platform = {
+      cpu = {
+        type     - CPU hardware type: ['snp', 'tdx']
+        firmware - (Optional) Path to custom firmware OVMF file.
+      }
+      gpu = {
+        type            - GPU provider: ['nvidia']
+        bus             - domain:bus:device.function can be fetched with `lspci | grep -i nvidia'
+        driver_version  - Version of the driver to install, the default depends on GPU provider
+      }
     }
   EOT
 
   type = object({
-    type     = string
-    firmware = optional(string)
+    cpu = object({
+      type     = string
+      firmware = optional(string)
+    })
+    gpu = optional(object({
+      type = string
+      bus  = optional(number, 2)
+      driver_version = optional(number)
+    }))
   })
 
   validation {
-    condition     = contains(["snp", "tdx"], var.cvm_cpu_platform.type)
-    error_message = "The value has to be one of the following: ['snp', 'tdx']"
+    condition     = contains(["snp", "tdx"], var.cvm_platform.cpu.type)
+    error_message = "cpu.type has to be one of the following: ['snp', 'tdx']"
+  }
+
+  validation {
+    condition     = var.cvm_platform.gpu == null || contains(["nvidia"], var.cvm_platform.gpu.type)
+    error_message = "gpu.type has to be one of the following: ['nvidia']"
   }
 }
 
@@ -44,29 +63,6 @@ variable "cvm_cloud_image" {
   type        = string
 }
 
-variable "remote_attestation" {
-  description = "Enable CanaryBit Remote Attestation"
-  type = object({
-    cb_inspector_url            = optional(string, "https://api.inspector.confidentialcloud.io")
-    cb_inspector_client_version = optional(string, "0.1.0")
-    cbcli_version               = optional(string, "0.2.6")
-    signing_key                 = optional(string)
-    custom_policy_file          = optional(string)
-    frequency                   = optional(string, "daily")
-  })
-
-  validation {
-    condition     = contains(["minutely", "hourly", "daily", "weekly", "monthly"], var.remote_attestation.frequency)
-    error_message = "The frequency has to be one of the following: minutely, hourly, daily, weekly, monthly"
-  }
-}
-
-variable "cvm_secure_boot" {
-  description = "Whether Secure Boot should be enabled in the firmware (yes, no). Default (not set): let libvirt decide based on the available firmware."
-  type        = bool
-  default     = null
-}
-
 variable "cvm_launch_policy" {
   description = "Launch security policy"
   type        = number
@@ -76,6 +72,18 @@ variable "cvm_launch_policy" {
 ///////////////////////
 // DEFAULT
 ///////////////////////
+
+variable "remote_attestation" {
+  description = "Enable CanaryBit Remote Attestation"
+  type        = any
+}
+
+variable "cvm_secure_boot" {
+  description = "Whether Secure Boot should be enabled in the firmware (yes, no). Default (not set): let libvirt decide based on the available firmware."
+  type        = bool
+  default     = null
+}
+
 variable "cvm_snp_policy" {
   description = "Optional SEV-SNP guest policy settings"
 
@@ -171,12 +179,6 @@ variable "cvm_cpu" {
   default     = "host-passthrough"
 }
 
-variable "cvm_firmware" {
-  description = "Path to firmware (OVMF.fd)"
-  type        = string
-  default     = null # Default depends on cvm_platform, see locals
-}
-
 variable "cvm_vcpus" {
   description = "Number of vcpus (cores)"
   type        = number
@@ -218,8 +220,8 @@ variable "cvm_network" {
   default     = "default"
 }
 
-variable "gpu_bus" {
-  description = "domain:bus:device.function can be fetched with 'lspci | grep -i nvidia'"
-  type        = number
-  default     = 2
+variable "cvm_annotations" {
+  description = "Custom annotations in \"<Key>\" = \"<Value>\" format"
+  type        = map(any)
+  default     = {}
 }

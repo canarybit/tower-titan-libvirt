@@ -2,7 +2,7 @@ terraform {
   required_version = ">= 0.14.0"
   required_providers {
     libvirt = {
-      source = "dmacvicar/libvirt"
+      source  = "dmacvicar/libvirt"
       version = "0.9.5"
     }
   }
@@ -32,7 +32,7 @@ variable "cb_password" {
 // =====================
 
 module "confidential-vm" {
-  count = 1
+  count  = 1
   source = "../../modules/libvirt"
 
   cb_username = var.cb_username
@@ -44,8 +44,9 @@ module "confidential-vm" {
   // Refer to the provider libvirt_volume resource (https://registry.terraform.io/providers/dmacvicar/libvirt/latest/docs/resources/volume)
   // for how to manage images with Terraform.
   cvm_cloud_image = "/var/lib/libvirt/images/questing-server-cloudimg-amd64.img"
-  cvm_cpu_platform = {
-    type = "snp"
+
+  cvm_platform = {
+    cpu = { type = "snp" }
   }
 
   // Remote Attestation
