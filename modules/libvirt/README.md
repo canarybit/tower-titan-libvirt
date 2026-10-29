@@ -208,13 +208,13 @@ Users of Terragrunt can achieve similar results by using modules provided in the
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 0.14.0 |
-| <a name="requirement_libvirt"></a> [libvirt](#requirement\_libvirt) | 0.9.5 |
+| <a name="requirement_libvirt"></a> [libvirt](#requirement\_libvirt) | ~> 0.9 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_libvirt"></a> [libvirt](#provider\_libvirt) | 0.9.5 |
+| <a name="provider_libvirt"></a> [libvirt](#provider\_libvirt) | ~> 0.9 |
 
 ## Modules
 
@@ -226,11 +226,11 @@ Users of Terragrunt can achieve similar results by using modules provided in the
 
 | Name | Type |
 |------|------|
-| [libvirt_cloudinit_disk.init](https://registry.terraform.io/providers/dmacvicar/libvirt/0.9.5/docs/resources/cloudinit_disk) | resource |
-| [libvirt_domain.cvm](https://registry.terraform.io/providers/dmacvicar/libvirt/0.9.5/docs/resources/domain) | resource |
-| [libvirt_volume.cloudinit](https://registry.terraform.io/providers/dmacvicar/libvirt/0.9.5/docs/resources/volume) | resource |
-| [libvirt_volume.overlay](https://registry.terraform.io/providers/dmacvicar/libvirt/0.9.5/docs/resources/volume) | resource |
-| [libvirt_domain_interface_addresses.cvm](https://registry.terraform.io/providers/dmacvicar/libvirt/0.9.5/docs/data-sources/domain_interface_addresses) | data source |
+| [libvirt_cloudinit_disk.init](https://registry.terraform.io/providers/dmacvicar/libvirt/latest/docs/resources/cloudinit_disk) | resource |
+| [libvirt_domain.cvm](https://registry.terraform.io/providers/dmacvicar/libvirt/latest/docs/resources/domain) | resource |
+| [libvirt_volume.cloudinit](https://registry.terraform.io/providers/dmacvicar/libvirt/latest/docs/resources/volume) | resource |
+| [libvirt_volume.overlay](https://registry.terraform.io/providers/dmacvicar/libvirt/latest/docs/resources/volume) | resource |
+| [libvirt_domain_interface_addresses.cvm](https://registry.terraform.io/providers/dmacvicar/libvirt/latest/docs/data-sources/domain_interface_addresses) | data source |
 
 ## Inputs
 
