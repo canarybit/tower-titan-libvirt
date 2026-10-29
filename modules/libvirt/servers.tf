@@ -25,7 +25,7 @@ resource "libvirt_domain" "cvm" {
     type             = "hvm"
     type_arch        = "x86_64"
     type_machine     = "q35"
-    loader_readonly  = var.cvm_platform.cpu.type == "tdx" ? "yes" : null
+    loader_readonly  = "yes"
     loader_stateless = "yes"
     // Prioritize explicit firmware when set
     loader   = var.cvm_platform.cpu.firmware != null ? var.cvm_platform.cpu.firmware : ""
