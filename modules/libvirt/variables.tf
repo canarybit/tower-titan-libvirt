@@ -197,23 +197,6 @@ variable "cvm_disk_size_gb" {
   default     = 30
 }
 
-variable "cvm_gpu" {
-  description = "Enable GPU passthrough"
-  type        = bool
-  default     = false
-}
-
-variable "cvm_gpu_type" {
-  description = "GPU type; Required when cvm_gpu is true."
-  type        = string
-  default     = null
-
-  validation {
-    condition     = var.cvm_gpu_type == null ? true : contains(["nvidia"], lower(var.cvm_gpu_type))
-    error_message = "cvm_gpu_type must be \"nvidia\" when specified."
-  }
-}
-
 variable "cvm_network" {
   description = "Libvirt network"
   type        = string
