@@ -16,7 +16,7 @@ It implements Infrastructure-as-Code (IaC) and SecDevOps best-practices to provi
 
 - [Terraform](https://developer.hashicorp.com/terraform) or [OpenTofu](https://opentofu.org/docs/intro/install/) installed;
 - Credentials to access your Infrastructure provider (either Public Cloud or On-prem);
-- A CanaryBit account. (*New user? [Create an account.](https://canarybit-production.auth.eu-north-1.amazoncognito.com/login?client_id=54g4h9tpulnnkmhivgn5nipjki&redirect_uri=https://docs.confidentialcloud.io/&response_type=code&scope=email+openid+profile)*)
+- A CanaryBit account
 
 ## Documentation
 For setup instructions, API references, and usage examples, read the [CanaryBit Tower Technical Documentation](https://docs.confidentialcloud.io/tower/).
